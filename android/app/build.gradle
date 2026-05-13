@@ -77,9 +77,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.studyflow"
+    namespace "com.oldalexhub.studyflow"
     defaultConfig {
-        applicationId "com.studyflow"
+        applicationId "com.oldalexhub.studyflow"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

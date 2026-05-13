@@ -1,4 +1,4 @@
-package com.studyflow
+package com.oldalexhub.studyflow
 
 import android.media.AudioAttributes
 import android.media.AudioFormat
@@ -17,7 +17,6 @@ class SoundModule(reactContext: ReactApplicationContext) :
     @ReactMethod
     fun playChime() {
         Thread {
-            // Two-note descending chime: 880 Hz then 660 Hz
             playTone(880.0, 160)
             Thread.sleep(60)
             playTone(660.0, 320)
@@ -27,8 +26,8 @@ class SoundModule(reactContext: ReactApplicationContext) :
     private fun playTone(frequency: Double, durationMs: Int) {
         val sampleRate = 44100
         val numSamples = sampleRate * durationMs / 1000
-        val fadeIn = sampleRate * 20 / 1000   // 20 ms fade-in
-        val fadeOut = sampleRate * 60 / 1000  // 60 ms fade-out
+        val fadeIn = sampleRate * 20 / 1000
+        val fadeOut = sampleRate * 60 / 1000
 
         val buffer = ShortArray(numSamples) { i ->
             val t = i.toDouble() / sampleRate

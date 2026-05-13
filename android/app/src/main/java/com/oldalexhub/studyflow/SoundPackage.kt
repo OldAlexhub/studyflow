@@ -1,4 +1,4 @@
-package com.studyflow
+package com.oldalexhub.studyflow
 
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule

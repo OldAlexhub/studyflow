@@ -1,4 +1,4 @@
-package com.studyflow
+package com.oldalexhub.studyflow
 
 import android.app.Application
 import com.facebook.react.PackageList

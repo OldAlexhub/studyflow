@@ -6,7 +6,7 @@
 -dontwarn com.facebook.hermes.**
 
 # StudyFlow native modules
--keep class com.studyflow.** { *; }
+-keep class com.oldalexhub.studyflow.** { *; }
 
 # React Navigation
 -keep class com.swmansion.** { *; }
