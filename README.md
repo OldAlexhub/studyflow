@@ -1,97 +1,180 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# StudyFlow
 
-# Getting Started
+> Enter your study time. StudyFlow guides the rhythm.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+A calm, focused study autopilot for Android. The user picks a duration — StudyFlow generates a structured session plan with focus blocks, timed breaks, and a final review, then runs it automatically from start to finish.
 
-## Step 1: Start Metro
+---
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## Features
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+- **One input only** — choose a duration (15, 30, 45, 60, 90, or 120 min, or any custom value from 10 to 180 min)
+- **Plan preview** — see the full block-by-block schedule before you start
+- **Mandatory 60-second pre-study reset** — guided phases to clear distractions before every session
+- **Automatic session runner** — transitions between focus blocks, breaks, and review automatically
+- **Break suggestions** — calm, screen-free activity prompts during every break
+- **Vibration + chime** at every block transition
+- **Pause / Resume / End** session controls
+- **Completion screen** with an encouraging message
+- No login. No account. No internet. No ads.
 
-```sh
-# Using npm
+---
+
+## Screen flow
+
+```
+Home → Plan Preview → Pre-Study Reset (60s) → Session → Complete
+```
+
+---
+
+## Prerequisites
+
+| Tool | Version |
+|---|---|
+| Node.js | >= 22 |
+| Java JDK | 17+ (Android Studio's bundled JBR works) |
+| Android SDK | API 36 (install via Android Studio) |
+| Python | 3.10+ (for release builds) |
+
+Set `ANDROID_HOME` to your SDK path, or just install Android Studio — `release.py` detects it automatically.
+
+---
+
+## Development setup
+
+```bash
+# Install JS dependencies
+npm install
+
+# Start Metro bundler
 npm start
 
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
+# Run on a connected device or emulator (new terminal)
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
+> The first build takes several minutes — Gradle downloads dependencies and compiles native modules.
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+---
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+## Project structure
 
-```sh
-bundle install
+```
+src/
+  screens/
+    HomeScreen.tsx          Duration picker
+    PlanPreviewScreen.tsx   Full plan displayed before starting
+    PreStudyScreen.tsx      60-second guided reset
+    SessionScreen.tsx       Live block runner with timer
+    CompleteScreen.tsx      End-of-session summary
+  components/
+    DurationButton.tsx
+    TimerDisplay.tsx
+    ProgressBar.tsx
+    SessionCard.tsx
+    BreakSuggestionCard.tsx
+  utils/
+    generateStudyPlan.ts    Session plan engine
+    formatTime.ts           MM:SS formatter
+    playChime.ts            Vibration + native chime wrapper
+  types/
+    study.ts                Shared TypeScript types
+  constants/
+    theme.ts                Colors, spacing, typography
+    breakSuggestions.ts     Break prompt strings
+
+android/
+  app/src/main/java/com/studyflow/
+    SoundModule.kt          Native chime via Android AudioTrack
+    SoundPackage.kt         Registers SoundModule with React Native
+
+assets/
+  logo.png                  App logo (used in HomeScreen + app icon)
+
+release.py                  Release build script (APK + AAB)
+releases/                   Output folder for signed artifacts (gitignored)
 ```
 
-Then, and every time you update your native dependencies, run:
+---
 
-```sh
-bundle exec pod install
+## Session plan engine
+
+`generateStudyPlan(durationMinutes)` returns an array of `StudyBlock` objects:
+
+```ts
+interface StudyBlock {
+  id: string;
+  type: 'prestudy' | 'focus' | 'break' | 'review';
+  title: string;
+  durationSeconds: number;
+  instruction: string;
+  suggestion?: string;  // break blocks only
+}
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+Preset plans exist for 15, 30, 45, 60, 90, and 120 minutes. Custom durations use a rule-based generator that always starts with a 1-minute pre-study block, uses 25-minute focus blocks where possible, and ends with a review block.
 
-```sh
-# Using npm
-npm run ios
+---
 
-# OR using Yarn
-yarn ios
+## Building a release
+
+Signing must be configured first (one-time setup):
+
+**1. Generate a keystore** (skip if you already have one):
+```bash
+keytool -genkeypair -v \
+  -keystore android/app/studyflow.keystore \
+  -alias studyflow -keyalg RSA -keysize 2048 -validity 10000
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+**2. Add credentials to `~/.gradle/gradle.properties`** — never commit this file:
+```properties
+STUDYFLOW_STORE_FILE=studyflow.keystore
+STUDYFLOW_KEY_ALIAS=studyflow
+STUDYFLOW_STORE_PASSWORD=your_store_password
+STUDYFLOW_KEY_PASSWORD=your_key_password
+```
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+**3. Build:**
+```bash
+python release.py apk      # signed APK  (sideloading / direct install)
+python release.py aab      # signed AAB  (Play Store upload)
+python release.py both     # both
+python release.py clean    # clean Gradle outputs
+```
 
-## Step 3: Modify your app
+Java and Android SDK are auto-detected from Android Studio or standard install paths. No manual environment setup needed.
 
-Now that you have successfully run the app, let's make changes!
+Artifacts are saved to `releases/` with a timestamp:
+```
+releases/StudyFlow_release_20260512_232921.apk
+releases/StudyFlow_release_20260512_232933.aab
+```
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+---
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+## Play Store checklist
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+- [ ] Upload `releases/*.aab` in Google Play Console
+- [ ] Add at least 2 phone screenshots
+- [ ] Write a short description (80 chars max)
+- [ ] Write a full description
+- [ ] Add a privacy policy URL (required even for offline apps)
+- [ ] Complete content rating questionnaire
+- [ ] Set category: Education or Productivity
 
-## Congratulations! :tada:
+---
 
-You've successfully run and modified your React Native App. :partying_face:
+## Tech stack
 
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+| Layer | Choice |
+|---|---|
+| Framework | Bare React Native 0.85 |
+| Language | TypeScript |
+| Navigation | React Navigation (native stack) |
+| Safe areas | react-native-safe-area-context |
+| Sound | Custom Android native module (AudioTrack) |
+| State | Local React state only |
+| Storage | None |
+| Backend | None |
