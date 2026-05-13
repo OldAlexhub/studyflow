@@ -1,45 +1,30 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { RootStackParamList } from './src/types/study';
+import HomeScreen from './src/screens/HomeScreen';
+import PlanPreviewScreen from './src/screens/PlanPreviewScreen';
+import PreStudyScreen from './src/screens/PreStudyScreen';
+import SessionScreen from './src/screens/SessionScreen';
+import CompleteScreen from './src/screens/CompleteScreen';
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
-
+export default function App() {
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
+      <NavigationContainer>
+        <Stack.Navigator
+          initialRouteName="Home"
+          screenOptions={{ headerShown: false, animation: 'fade' }}>
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="PlanPreview" component={PlanPreviewScreen} />
+          <Stack.Screen name="PreStudy" component={PreStudyScreen} />
+          <Stack.Screen name="Session" component={SessionScreen} />
+          <Stack.Screen name="Complete" component={CompleteScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
     </SafeAreaProvider>
   );
 }
-
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
-
-  return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
-
-export default App;

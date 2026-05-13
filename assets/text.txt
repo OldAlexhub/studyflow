@@ -1,0 +1,7 @@
+Critical reminders before Play Store submission
+Back up your keystore now — copy android/app/studyflow.keystore somewhere safe (cloud, USB). If you lose it you can never publish updates.
+Add to .gitignore — the keystore must not be committed:
+
+android/app/studyflow.keystore
+Play Store upload — use the .aab file, not the .apk
+App ID is com.studyflow — set in build.gradle

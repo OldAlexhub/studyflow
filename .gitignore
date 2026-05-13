@@ -73,3 +73,14 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# StudyFlow — release artifacts (large binaries, rebuilt on demand)
+releases/
+
+# StudyFlow — env / secrets
+.env
+.env.*
+!.env.example
+
+# TypeScript build info
+*.tsbuildinfo
