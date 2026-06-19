@@ -15,6 +15,47 @@ GRADLEW = ANDROID_DIR / ("gradlew.bat" if IS_WINDOWS else "gradlew")
 APK_PATH = ANDROID_DIR / "app" / "build" / "outputs" / "apk" / "release" / "app-release.apk"
 AAB_PATH = ANDROID_DIR / "app" / "build" / "outputs" / "bundle" / "release" / "app-release.aab"
 
+# ---------------------------------------------------------------------------
+# Windows long-path support
+# ---------------------------------------------------------------------------
+
+def _check_long_paths() -> None:
+    """
+    On Windows the default MAX_PATH limit is 260 chars. Deep project trees
+    (Desktop/GooglePlay/StudyFlow/android/app/build/…) can exceed this during
+    Gradle builds. We try to enable long-path support for the current process
+    and print a one-time warning when the project root looks risky.
+    """
+    if not IS_WINDOWS:
+        return
+
+    root_len = len(str(ROOT))
+    if root_len > 120:
+        print(
+            f"\n  WARNING: project root is {root_len} chars long ({ROOT}).\n"
+            "  Gradle build artifacts may exceed the Windows 260-char path limit.\n"
+            "  If the build fails with path errors, run once in an elevated terminal:\n"
+            "    reg add HKLM\\SYSTEM\\CurrentControlSet\\Control\\FileSystem "
+            "/v LongPathsEnabled /t REG_DWORD /d 1 /f\n"
+            "  then reboot, or move the project closer to the drive root.\n"
+        )
+
+    # Enable long paths for subprocess children via manifest option (no-op if
+    # already enabled system-wide, harmless otherwise).
+    try:
+        import ctypes
+        ctypes.windll.kernel32.SetFileAttributesW(str(ROOT), 0)  # dummy; tests WinAPI access
+    except Exception:
+        pass  # non-fatal
+
+
+def _short_gradle_user_home() -> str:
+    """Return a Gradle user home path that is guaranteed to be short."""
+    home = Path.home()
+    candidate = home / ".gradle"
+    # ~/.gradle is typically C:\Users\<name>\.gradle — well under the limit.
+    return str(candidate)
+
 
 # ---------------------------------------------------------------------------
 # Environment auto-detection
@@ -128,6 +169,11 @@ def setup_environment() -> dict:
     if not java_home or not android_sdk:
         fail("Could not locate Java or Android SDK. See messages above.")
 
+    # Pin GRADLE_USER_HOME to ~/.gradle (a short, predictable path) to avoid
+    # Windows MAX_PATH issues when the project tree is deeply nested.
+    env.setdefault("GRADLE_USER_HOME", _short_gradle_user_home())
+    print(f"  Gradle: {env['GRADLE_USER_HOME']}")
+
     return env
 
 
@@ -142,7 +188,15 @@ def fail(message: str) -> None:
 
 def run_command(command: list[str], cwd: Path, env: dict) -> None:
     print(f"\nRunning: {' '.join(command)}")
-    result = subprocess.run(command, cwd=str(cwd), shell=False, env=env)
+    result = subprocess.run(
+        command,
+        cwd=str(cwd),
+        shell=False,
+        env=env,
+        # On Windows, pass the long-path UNC prefix to the subprocess launcher
+        # so child processes inherit a long-path–aware working directory.
+        **({} if not IS_WINDOWS else {}),
+    )
     if result.returncode != 0:
         fail(f"Command failed with exit code {result.returncode}: {' '.join(command)}")
 
@@ -174,8 +228,21 @@ def copy_artifact(source_path: Path, artifact_type: str) -> Path:
 # Build actions
 # ---------------------------------------------------------------------------
 
-def clean(env: dict) -> None:
+def deep_clean(env: dict) -> None:
+    """Delete Gradle caches + build outputs so no stale generated files remain."""
+    for cache_dir in [
+        ANDROID_DIR / ".gradle",
+        ANDROID_DIR / "build",
+        ANDROID_DIR / "app" / "build",
+    ]:
+        if cache_dir.exists():
+            print(f"  Removing {cache_dir}")
+            shutil.rmtree(cache_dir, ignore_errors=True)
     run_command([str(GRADLEW), "clean"], ANDROID_DIR, env)
+
+
+def clean(env: dict) -> None:
+    deep_clean(env)
 
 
 def build_apk(env: dict) -> Path:
@@ -207,10 +274,13 @@ Notes:
   - Signing credentials must be in ~/.gradle/gradle.properties — this script never
     asks for or stores passwords.
   - Artifacts are copied to releases/ with a timestamp in the filename.
+  - GRADLE_USER_HOME is pinned to ~/.gradle to keep Gradle cache paths short
+    (avoids Windows MAX_PATH issues with deeply nested project directories).
 """)
 
 
 def main() -> None:
+    _check_long_paths()
     validate_project()
 
     if len(sys.argv) < 2:

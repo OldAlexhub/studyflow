@@ -13,6 +13,7 @@ import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList, StudyBlock, BlockType } from '../types/study';
 import { generateStudyPlan } from '../utils/generateStudyPlan';
 import { formatTime } from '../utils/formatTime';
+import BannerAdView from '../components/BannerAdView';
 import { colors, spacing, radii, fontSizes, fontWeights } from '../constants/theme';
 
 type Props = {
@@ -139,6 +140,8 @@ export default function PlanPreviewScreen({ navigation, route }: Props) {
           The app will guide you through each block automatically.{'\n'}
           Vibration + sound will signal every transition.
         </Text>
+
+        <BannerAdView />
       </ScrollView>
 
       {/* Fixed footer CTA */}

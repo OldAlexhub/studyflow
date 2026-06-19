@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
+import { InterstitialAd, AdEventType } from 'react-native-google-mobile-ads';
+import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList, StudyBlock, BlockType } from '../types/study';
 import TimerDisplay from '../components/TimerDisplay';
 import ProgressBar from '../components/ProgressBar';
@@ -18,6 +20,7 @@ import SessionCard from '../components/SessionCard';
 import BreakSuggestionCard from '../components/BreakSuggestionCard';
 import { generateStudyPlan } from '../utils/generateStudyPlan';
 import { playChime } from '../utils/playChime';
+import { AD_UNITS } from '../utils/adUnits';
 import { colors, spacing, radii, fontSizes, fontWeights } from '../constants/theme';
 
 type Props = {
@@ -34,6 +37,14 @@ const BLOCK_COLORS: Record<BlockType, string> = {
 
 export default function SessionScreen({ navigation, route }: Props) {
   const { durationMinutes } = route.params;
+  const rootNav = useNavigation();
+
+  useLayoutEffect(() => {
+    rootNav.getParent()?.setOptions({ tabBarStyle: { display: 'none' } });
+    return () => {
+      rootNav.getParent()?.setOptions({ tabBarStyle: undefined });
+    };
+  }, [rootNav]);
 
   const plan = useMemo(() => generateStudyPlan(durationMinutes), [durationMinutes]);
 
@@ -48,6 +59,9 @@ export default function SessionScreen({ navigation, route }: Props) {
   const pausedAtRef = useRef<number | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const doneRef = useRef(false);
+  const interstitialRef = useRef(
+    InterstitialAd.createForAdRequest(AD_UNITS.interstitial),
+  );
 
   blockIndexRef.current = blockIndex;
   secondsLeftRef.current = secondsLeft;
@@ -80,6 +94,15 @@ export default function SessionScreen({ navigation, route }: Props) {
     return 1 - secondsLeft / currentBlock.durationSeconds;
   }, [currentBlock, secondsLeft]);
 
+  useEffect(() => {
+    const interstitial = interstitialRef.current;
+    interstitial.load();
+    const unsubClose = interstitial.addAdEventListener(AdEventType.CLOSED, () => {
+      interstitial.load();
+    });
+    return () => unsubClose();
+  }, []);
+
   const advanceBlock = useCallback(() => {
     const idx = blockIndexRef.current;
     const nextIdx = idx + 1;
@@ -94,6 +117,13 @@ export default function SessionScreen({ navigation, route }: Props) {
     }
 
     const nextBlock = plan[nextIdx];
+
+    if (nextBlock.type === 'focus' || nextBlock.type === 'break') {
+      if (interstitialRef.current.loaded) {
+        interstitialRef.current.show().catch(() => {});
+      }
+    }
+
     setBlockIndex(nextIdx);
     setSecondsLeft(nextBlock.durationSeconds);
     blockStartTimeRef.current = Date.now();

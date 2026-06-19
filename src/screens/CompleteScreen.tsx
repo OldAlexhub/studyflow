@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
+import { InterstitialAd, AdEventType } from 'react-native-google-mobile-ads';
 import { RootStackParamList } from '../types/study';
+import BannerAdView from '../components/BannerAdView';
+import { AD_UNITS } from '../utils/adUnits';
+import { saveSession } from '../utils/studyStorage';
 import { colors, spacing, radii, fontSizes, fontWeights } from '../constants/theme';
 
 type Props = {
@@ -34,6 +38,21 @@ function getMessage(durationMinutes: number): string {
 export default function CompleteScreen({ navigation, route }: Props) {
   const { durationMinutes } = route.params;
   const message = getMessage(durationMinutes);
+  const interstitialRef = useRef(
+    InterstitialAd.createForAdRequest(AD_UNITS.interstitial),
+  );
+
+  useEffect(() => {
+    saveSession(durationMinutes);
+
+    const interstitial = interstitialRef.current;
+    const unsubscribe = interstitial.addAdEventListener(AdEventType.LOADED, () => {
+      setTimeout(() => interstitial.show(), 1500);
+    });
+    interstitial.load();
+    return () => unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleStartAnother = () => {
     navigation.replace('Home');
@@ -98,6 +117,8 @@ export default function CompleteScreen({ navigation, route }: Props) {
             <Text style={styles.secondaryBtnText}>Back to Home</Text>
           </Pressable>
         </View>
+
+        <BannerAdView />
 
         {/* Footer hint */}
         <Text style={styles.footerHint}>

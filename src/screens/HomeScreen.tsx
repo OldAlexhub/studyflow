@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/study';
 import DurationButton from '../components/DurationButton';
+import BannerAdView from '../components/BannerAdView';
 import { colors, spacing, radii, fontSizes, fontWeights } from '../constants/theme';
 
 type Props = {
@@ -75,7 +76,8 @@ export default function HomeScreen({ navigation }: Props) {
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+          style={styles.scrollView}>
           {/* Header */}
           <View style={styles.header}>
             <Image
@@ -152,6 +154,7 @@ export default function HomeScreen({ navigation }: Props) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      <BannerAdView />
     </SafeAreaView>
   );
 }
@@ -162,6 +165,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   flex: {
+    flex: 1,
+  },
+  scrollView: {
     flex: 1,
   },
   scroll: {

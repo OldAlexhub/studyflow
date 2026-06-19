@@ -1,12 +1,13 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../types/study';
 import { playChime } from '../utils/playChime';
 import TimerDisplay from '../components/TimerDisplay';
 import ProgressBar from '../components/ProgressBar';
+import BannerAdView from '../components/BannerAdView';
 import { colors, spacing, fontSizes, fontWeights, radii } from '../constants/theme';
 
 type Props = {
@@ -38,6 +39,14 @@ function getPhase(secondsLeft: number): Phase {
 
 export default function PreStudyScreen({ navigation, route }: Props) {
   const { durationMinutes } = route.params;
+  const rootNav = useNavigation();
+
+  useLayoutEffect(() => {
+    rootNav.getParent()?.setOptions({ tabBarStyle: { display: 'none' } });
+    return () => {
+      rootNav.getParent()?.setOptions({ tabBarStyle: undefined });
+    };
+  }, [rootNav]);
   const [secondsLeft, setSecondsLeft] = useState(TOTAL_SECONDS);
   const startTimeRef = useRef<number>(Date.now());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -119,6 +128,8 @@ export default function PreStudyScreen({ navigation, route }: Props) {
           })}
         </View>
       </View>
+
+      <BannerAdView />
     </SafeAreaView>
   );
 }
@@ -132,7 +143,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xl,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.lg,
     justifyContent: 'space-between',
   },
   topSection: {
