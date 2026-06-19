@@ -1,4 +1,7 @@
 {
   "name": "StudyFlow",
-  "displayName": "StudyFlow"
+  "displayName": "StudyFlow",
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-7831002909037560~8020378246"
+  }
 }
